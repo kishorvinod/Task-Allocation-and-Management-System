@@ -1,7 +1,17 @@
-function App() {
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-  return <div>Task Management System</div>;
+import LoginPage from "./pages/Login/LoginPage";
+import DashboardPage from "./pages/Dashboard/DashboardPage";
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
- 
 
 export default App;
