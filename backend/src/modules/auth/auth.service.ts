@@ -3,6 +3,21 @@ import { User } from "../users/user.model";
 import { generateToken } from "../../utils/jwt";
 
 export class AuthService {
+    static async getMe(userId: string) {
+        const user =
+            await User.findById(userId).select(
+                "-password"
+            );
+
+        if (!user) {
+            throw new Error(
+                "User not found"
+            );
+        }
+
+        return user;
+    }
+
     static async register(data: any) {
         const existingUser =
             await User.findOne({

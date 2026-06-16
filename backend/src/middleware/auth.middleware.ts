@@ -24,9 +24,8 @@ export async function verifyToken(
                 token,
                 env.jwtSecret
             );
-
-        (request as any).user =
-            decoded;
+            
+        request.user = decoded as any;
 
     } catch {
         return reply.status(401).send({
