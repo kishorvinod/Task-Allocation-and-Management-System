@@ -1,5 +1,10 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import swagger from "@fastify/swagger";
+import swaggerUI from "@fastify/swagger-ui";
+import { authRoutes } from "./modules/auth/auth.routes";
+
+
 
 const app = Fastify({
   logger: true
@@ -7,10 +12,34 @@ const app = Fastify({
 
 app.register(cors);
 
+// Swagger config
+app.register(swagger, {
+  swagger: {
+    info: {
+      title: "My API",
+      description: "API Documentation",
+      version: "1.0.0"
+    },
+    host: "localhost:3000",
+    schemes: ["http"],
+    consumes: ["application/json"],
+    produces: ["application/json"]
+  }
+});
+
+// Swagger UI
+app.register(swaggerUI, {
+  routePrefix: "/docs"
+});
+
+app.register(authRoutes, {
+  prefix: "/api/auth"
+});
+
 app.get("/health", async () => {
   return {
     success: true,
-    message: "API Running"
+    message: "Backend Service Running"
   };
 });
 
