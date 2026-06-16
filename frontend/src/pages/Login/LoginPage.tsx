@@ -1,12 +1,14 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 import { loginSchema, LoginFormData } from "./login.schema";
 import { loginUser } from "../../services/auth.service";
-import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
     const navigate = useNavigate();
+    const { setUser } = useAuth(); 
 
     const {
         register,
@@ -18,9 +20,20 @@ export default function LoginPage() {
 
     const onSubmit = async (data: LoginFormData) => {
         try {
-            const response = await loginUser(data.email, data.password);
-            localStorage.setItem("token", response.data.token);
+            const response = await loginUser(
+                data.email,
+                data.password
+            );
+
+            localStorage.setItem(
+                "token",
+                response.data.token
+            );
+
+            setUser(response.data.user); 
+
             navigate("/dashboard");
+
         } catch {
             alert("Invalid credentials");
         }
@@ -29,8 +42,12 @@ export default function LoginPage() {
     return (
         <div>
             <h1>Login</h1>
+
             <form onSubmit={handleSubmit(onSubmit)}>
-                <input placeholder="Email" {...register("email")} />
+                <input
+                    placeholder="Email"
+                    {...register("email")}
+                />
                 <p>{errors.email?.message}</p>
 
                 <input
@@ -40,7 +57,9 @@ export default function LoginPage() {
                 />
                 <p>{errors.password?.message}</p>
 
-                <button type="submit">Login</button>
+                <button type="submit">
+                    Login
+                </button>
             </form>
         </div>
     );

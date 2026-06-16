@@ -1,30 +1,88 @@
-import {
+import React, {
     createContext,
     useContext,
+    useEffect,
     useState
 } from "react";
 
+import { getCurrentUser } from "../services/auth.service";
+
 interface AuthContextType {
     user: any;
-    setUser: React.Dispatch<any>;
+    loading: boolean;
+    setUser: React.Dispatch<React.SetStateAction<any>>;
+    logout: () => void;
 }
 
-const AuthContext =
-    createContext<AuthContextType>(
-        {} as AuthContextType
-    );
+const AuthContext = createContext<AuthContextType>(
+    {} as AuthContextType
+);
 
 export const AuthProvider = ({
     children
-}: any) => {
+}: {
+    children: React.ReactNode;
+}) => {
 
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState<any>(null);
+
+    const [loading, setLoading] =
+        useState(true);
+
+    useEffect(() => {
+
+        const loadUser = async () => {
+
+            try {
+
+                const token =
+                    localStorage.getItem(
+                        "token"
+                    );
+
+                if (!token) {
+                    setLoading(false);
+                    return;
+                }
+
+                const response =
+                    await getCurrentUser();
+
+                setUser(response.data);
+
+            } catch {
+
+                localStorage.removeItem(
+                    "token"
+                );
+
+            } finally {
+
+                setLoading(false);
+
+            }
+        };
+
+        loadUser();
+
+    }, []);
+
+    const logout = () => {
+
+        localStorage.removeItem(
+            "token"
+        );
+
+        setUser(null);
+    };
 
     return (
         <AuthContext.Provider
             value={{
                 user,
-                setUser
+                loading,
+                setUser,
+                logout
             }}
         >
             {children}
