@@ -25,32 +25,15 @@ export default function DashboardLayout({
     };
 
     return (
-        <div
-            style={{
-                display: "flex",
-                minHeight: "100vh"
-            }}
-        >
-            <aside
-                style={{
-                    width: "250px",
-                    background: "#f5f5f5",
-                    padding: "20px",
-                    borderRight: "1px solid #ddd"
-                }}
-            >
+        <div className="app-shell">
+            <aside className="sidebar">
                 <h2>
                     Task Manager
                 </h2>
 
                 <hr />
 
-                <div
-                    style={{
-                        marginTop: "20px",
-                        marginBottom: "20px"
-                    }}
-                >
+                <div className="sidebar-user">
                     <p>
                         <strong>
                             {user?.name}
@@ -63,17 +46,8 @@ export default function DashboardLayout({
                 </div>
 
                 <nav>
-                    <ul
-                        style={{
-                            listStyle: "none",
-                            padding: 0
-                        }}
-                    >
-                        <li
-                            style={{
-                                marginBottom: "10px"
-                            }}
-                        >
+                    <ul>
+                        <li>
                             <Link to="/dashboard">
                                 Dashboard
                             </Link>
@@ -81,21 +55,13 @@ export default function DashboardLayout({
 
                         {user?.role === "admin" && (
                             <>
-                                <li
-                                    style={{
-                                        marginBottom: "10px"
-                                    }}
-                                >
+                                <li>
                                     <Link to="/users">
                                         Users
                                     </Link>
                                 </li>
 
-                                <li
-                                    style={{
-                                        marginBottom: "10px"
-                                    }}
-                                >
+                                <li>
                                     <Link to="/tasks">
                                         Tasks
                                     </Link>
@@ -115,22 +81,13 @@ export default function DashboardLayout({
 
                 <button
                     onClick={handleLogout}
-                    style={{
-                        marginTop: "30px",
-                        padding: "10px",
-                        cursor: "pointer"
-                    }}
+                    className="logout-button"
                 >
                     Logout
                 </button>
             </aside>
 
-            <main
-                style={{
-                    flex: 1,
-                    padding: "30px"
-                }}
-            >
+            <main className="main-content">
                 {children}
             </main>
         </div>

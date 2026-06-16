@@ -4,10 +4,10 @@ import {
 } from "react";
 
 import DashboardLayout from "../../layouts/DashboardLayout";
+import { useAuth } from "../../context/AuthContext";
 
 import {
-    getDashboardStats,
-    getWorkload
+    getDashboardStats
 } from "../../services/dashboard.service";
 
 interface DashboardStats {
@@ -18,25 +18,14 @@ interface DashboardStats {
     totalUsers: number;
 }
 
-interface WorkloadUser {
-    userId: string;
-    name: string;
-    email: string;
-    availableHours: number;
-    allocatedHours: number;
-    remainingHours: number;
-    taskCount: number;
-}
-
 export default function DashboardPage() {
+
+    const { user } = useAuth();
 
     const [stats, setStats] =
         useState<DashboardStats | null>(
             null
         );
-
-    const [workload, setWorkload] =
-        useState<WorkloadUser[]>([]);
 
     const [loading, setLoading] =
         useState(true);
@@ -55,15 +44,8 @@ export default function DashboardPage() {
                 const statsResponse =
                     await getDashboardStats();
 
-                const workloadResponse =
-                    await getWorkload();
-
                 setStats(
                     statsResponse.data
-                );
-
-                setWorkload(
-                    workloadResponse.data
                 );
 
             } catch (error) {
@@ -91,20 +73,127 @@ export default function DashboardPage() {
         );
     }
 
+    const skills =
+        user?.skills || [];
+
+    const workingDays =
+        user?.workingDays || [];
+
+    const weeklyCapacity =
+        (user?.availableHoursPerDay || 0) *
+        workingDays.length;
+
     return (
         <DashboardLayout>
 
-            <h1>
-                Dashboard
-            </h1>
+            <div className="page-header">
+                <h1 className="page-title">
+                    Dashboard
+                </h1>
+            </div>
+
+            <div className="panel">
+                <h2>
+                    My Details
+                </h2>
+
+                <div className="metric-grid">
+                    <ProfileItem
+                        label="Name"
+                        value={user?.name || "-"}
+                    />
+
+                    <ProfileItem
+                        label="Email"
+                        value={user?.email || "-"}
+                    />
+
+                    <ProfileItem
+                        label="Role"
+                        value={user?.role || "-"}
+                    />
+
+                    <ProfileItem
+                        label="Daily Hours"
+                        value={
+                            user?.availableHoursPerDay ||
+                            0
+                        }
+                    />
+
+                    <ProfileItem
+                        label="Weekly Capacity"
+                        value={weeklyCapacity}
+                    />
+                </div>
+
+                <div
+                    style={{
+                        marginTop: "20px"
+                    }}
+                >
+                    <h3>
+                        Skills
+                    </h3>
+
+                    {skills.length > 0 ? (
+                        <div className="tag-list">
+                            {skills.map(
+                                (
+                                    skill: string
+                                ) => (
+                                    <span
+                                        className="tag"
+                                        key={skill}
+                                    >
+                                        {skill}
+                                    </span>
+                                )
+                            )}
+                        </div>
+                    ) : (
+                        <p className="muted">
+                            No skills added yet.
+                        </p>
+                    )}
+                </div>
+
+                <div
+                    style={{
+                        marginTop: "20px"
+                    }}
+                >
+                    <h3>
+                        Working Days
+                    </h3>
+
+                    {workingDays.length > 0 ? (
+                        <div className="tag-list">
+                            {workingDays.map(
+                                (
+                                    day: string
+                                ) => (
+                                    <span
+                                        className="tag"
+                                        key={day}
+                                    >
+                                        {day}
+                                    </span>
+                                )
+                            )}
+                        </div>
+                    ) : (
+                        <p className="muted">
+                            Availability is not configured.
+                        </p>
+                    )}
+                </div>
+            </div>
 
             <div
+                className="metric-grid"
                 style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                        "repeat(auto-fit,minmax(200px,1fr))",
-                    gap: "20px",
-                    marginTop: "30px"
+                    marginTop: "22px"
                 }}
             >
                 <StatCard
@@ -135,120 +224,43 @@ export default function DashboardPage() {
                     }
                 />
 
-                <StatCard
-                    title="Users"
-                    value={
-                        stats?.totalUsers || 0
-                    }
-                />
-            </div>
-
-            <div
-                style={{
-                    marginTop: "50px"
-                }}
-            >
-                <h2>
-                    Team Workload
-                </h2>
-
-                <table
-                    style={{
-                        width: "100%",
-                        borderCollapse:
-                            "collapse",
-                        marginTop: "20px"
-                    }}
-                >
-                    <thead>
-                        <tr>
-                            <th style={tableHeader}>
-                                Name
-                            </th>
-
-                            <th style={tableHeader}>
-                                Available Hours
-                            </th>
-
-                            <th style={tableHeader}>
-                                Allocated Hours
-                            </th>
-
-                            <th style={tableHeader}>
-                                Remaining Hours
-                            </th>
-
-                            <th style={tableHeader}>
-                                Tasks
-                            </th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {workload.map(
-                            (user) => (
-                                <tr
-                                    key={
-                                        user.userId
-                                    }
-                                >
-                                    <td
-                                        style={
-                                            tableCell
-                                        }
-                                    >
-                                        {
-                                            user.name
-                                        }
-                                    </td>
-
-                                    <td
-                                        style={
-                                            tableCell
-                                        }
-                                    >
-                                        {
-                                            user.availableHours
-                                        }
-                                    </td>
-
-                                    <td
-                                        style={
-                                            tableCell
-                                        }
-                                    >
-                                        {
-                                            user.allocatedHours
-                                        }
-                                    </td>
-
-                                    <td
-                                        style={
-                                            tableCell
-                                        }
-                                    >
-                                        {
-                                            user.remainingHours
-                                        }
-                                    </td>
-
-                                    <td
-                                        style={
-                                            tableCell
-                                        }
-                                    >
-                                        {
-                                            user.taskCount
-                                        }
-                                    </td>
-                                </tr>
-                            )
-                        )}
-                    </tbody>
-                </table>
+                {user?.role === "admin" && (
+                    <StatCard
+                        title="Users"
+                        value={
+                            stats?.totalUsers || 0
+                        }
+                    />
+                )}
             </div>
 
         </DashboardLayout>
+    );
+}
+
+function ProfileItem({
+    label,
+    value
+}: {
+    label: string;
+    value: string | number;
+}) {
+
+    return (
+        <div className="metric-card">
+            <h3>
+                {label}
+            </h3>
+
+            <p
+                style={{
+                    margin: 0,
+                    fontWeight: 700
+                }}
+            >
+                {value}
+            </p>
+        </div>
     );
 }
 
@@ -261,34 +273,14 @@ function StatCard({
 }) {
 
     return (
-        <div
-            style={{
-                border:
-                    "1px solid #ddd",
-                borderRadius: "10px",
-                padding: "20px",
-                textAlign: "center",
-                background: "#fff"
-            }}
-        >
+        <div className="metric-card">
             <h3>
                 {title}
             </h3>
 
-            <h1>
+            <strong>
                 {value}
-            </h1>
+            </strong>
         </div>
     );
 }
-
-const tableHeader: React.CSSProperties = {
-    border: "1px solid #ddd",
-    padding: "10px",
-    background: "#f5f5f5"
-};
-
-const tableCell: React.CSSProperties = {
-    border: "1px solid #ddd",
-    padding: "10px"
-};

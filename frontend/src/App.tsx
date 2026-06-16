@@ -12,6 +12,8 @@ import UsersPage from "./pages/Users/UsersPage";
 
 import TasksPage from "./pages/Tasks/TasksPage";
 
+import AnalyticsPage from "./pages/Analytics/AnalyticsPage";
+
 import PrivateRoute from "./routes/PrivateRoute";
 
 import AdminRoute from "./routes/AdminRoute";
@@ -32,6 +34,13 @@ function App() {
             path="/"
             element={
               <LoginPage />
+            }
+          />
+
+          <Route
+            path="/analytics"
+            element={
+              <AnalyticsPage />
             }
           />
 

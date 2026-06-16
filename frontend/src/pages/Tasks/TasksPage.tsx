@@ -45,6 +45,11 @@ interface User {
     role: string;
 }
 
+interface PendingTaskChange {
+    status?: TaskStatus;
+    assignedUserId?: string;
+}
+
 export default function TasksPage() {
 
     const { user } = useAuth();
@@ -79,6 +84,11 @@ export default function TasksPage() {
     const [selectedTask, setSelectedTask] =
         useState<Task | null>(null);
 
+    const [pendingChanges, setPendingChanges] =
+        useState<Record<string, PendingTaskChange>>(
+            {}
+        );
+
     const assignableUsers =
         users.filter(
             item =>
@@ -103,6 +113,8 @@ export default function TasksPage() {
                 setTasks(
                     response.data.tasks
                 );
+
+                setPendingChanges({});
 
                 setTotalPages(
                     response.data.totalPages
@@ -160,62 +172,92 @@ export default function TasksPage() {
         user?.role
     ]);
 
-    const handleAssignChange =
-        async (
+    const setPendingValue =
+        (
             task: Task,
-            userId: string
+            change: PendingTaskChange
         ) => {
 
-            if (
-                !userId ||
-                userId === task.assignedUser?._id
-            ) {
-                return;
-            }
+            setPendingChanges(
+                current => {
 
-            try {
+                    const nextChange = {
+                        ...(current[task._id] ||
+                            {}),
+                        ...change
+                    };
 
-                await assignTask(
-                    task._id,
-                    userId
-                );
+                    if (
+                        nextChange.status ===
+                        task.status
+                    ) {
+                        delete nextChange.status;
+                    }
 
-                loadTasks();
+                    if (
+                        nextChange.assignedUserId ===
+                        (
+                            task.assignedUser?._id ||
+                            ""
+                        )
+                    ) {
+                        delete nextChange.assignedUserId;
+                    }
 
-            } catch (error) {
+                    const next = {
+                        ...current
+                    };
 
-                console.error(error);
-                alert("Failed to assign task");
+                    if (
+                        nextChange.status ||
+                        nextChange.assignedUserId
+                    ) {
+                        next[task._id] =
+                            nextChange;
+                    } else {
+                        delete next[task._id];
+                    }
 
-            }
+                    return next;
+                }
+            );
+
         };
 
-    const handleStatusChange =
+    const saveTaskChanges =
         async (
-            task: Task,
-            nextStatus: TaskStatus
+            task: Task
         ) => {
 
-            if (
-                nextStatus ===
-                task.status
-            ) {
+            const changes =
+                pendingChanges[task._id];
+
+            if (!changes) {
                 return;
             }
 
             try {
 
-                await updateTaskStatus(
-                    task._id,
-                    nextStatus
-                );
+                if (changes.assignedUserId) {
+                    await assignTask(
+                        task._id,
+                        changes.assignedUserId
+                    );
+                }
+
+                if (changes.status) {
+                    await updateTaskStatus(
+                        task._id,
+                        changes.status
+                    );
+                }
 
                 loadTasks();
 
             } catch (error) {
 
                 console.error(error);
-                alert("Failed to update status");
+                alert("Failed to save task changes");
 
             }
         };
@@ -249,16 +291,8 @@ export default function TasksPage() {
     return (
         <DashboardLayout>
 
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent:
-                        "space-between",
-                    alignItems:
-                        "center"
-                }}
-            >
-                <h1>
+            <div className="page-header">
+                <h1 className="page-title">
                     Tasks
                 </h1>
 
@@ -273,13 +307,8 @@ export default function TasksPage() {
                 )}
             </div>
 
-            <div
-                style={{
-                    display: "flex",
-                    gap: "10px",
-                    marginTop: "20px"
-                }}
-            >
+            <div className="panel">
+            <div className="toolbar">
 
                 <input
                     placeholder="Search tasks"
@@ -352,16 +381,8 @@ export default function TasksPage() {
             ) : (
 
                 <>
-                    <table
-                        style={{
-                            width:
-                                "100%",
-                            marginTop:
-                                "20px",
-                            borderCollapse:
-                                "collapse"
-                        }}
-                    >
+                    <div className="table-wrap">
+                    <table className="data-table">
 
                         <thead>
 
@@ -427,14 +448,21 @@ export default function TasksPage() {
                                         <td style={cell}>
                                             <select
                                                 value={
+                                                    pendingChanges[
+                                                        task
+                                                            ._id
+                                                    ]?.status ||
                                                     task.status
                                                 }
                                                 onChange={(event) =>
-                                                    handleStatusChange(
+                                                    setPendingValue(
                                                         task,
-                                                        event
-                                                            .target
-                                                            .value as TaskStatus
+                                                        {
+                                                            status:
+                                                                event
+                                                                    .target
+                                                                    .value as TaskStatus
+                                                        }
                                                     )
                                                 }
                                             >
@@ -466,17 +494,24 @@ export default function TasksPage() {
                                             {user?.role === "admin" ? (
                                                 <select
                                                     value={
+                                                        pendingChanges[
+                                                            task
+                                                                ._id
+                                                        ]?.assignedUserId ??
                                                         task
                                                             .assignedUser
-                                                            ?._id ||
+                                                            ?._id ??
                                                         ""
                                                     }
                                                     onChange={(event) =>
-                                                        handleAssignChange(
+                                                        setPendingValue(
                                                             task,
-                                                            event
-                                                                .target
-                                                                .value
+                                                            {
+                                                                assignedUserId:
+                                                                    event
+                                                                        .target
+                                                                        .value
+                                                            }
                                                         )
                                                     }
                                                 >
@@ -510,6 +545,7 @@ export default function TasksPage() {
                                         </td>
 
                                         <td style={cell}>
+                                            <div className="action-row">
 
                                             {user?.role === "admin" && (
                                                 <button
@@ -523,12 +559,23 @@ export default function TasksPage() {
                                                 </button>
                                             )}
 
+                                            {pendingChanges[
+                                                task._id
+                                            ] && (
+                                                <button
+                                                    onClick={() =>
+                                                        saveTaskChanges(
+                                                            task
+                                                        )
+                                                    }
+                                                >
+                                                    Save Changes
+                                                </button>
+                                            )}
+
                                             {user?.role === "admin" && (
                                                 <button
-                                                    style={{
-                                                        marginLeft:
-                                                            "10px"
-                                                    }}
+                                                    className="danger-button"
                                                     onClick={() =>
                                                         handleDelete(
                                                             task._id
@@ -538,6 +585,7 @@ export default function TasksPage() {
                                                     Delete
                                                 </button>
                                             )}
+                                            </div>
 
                                         </td>
 
@@ -549,6 +597,7 @@ export default function TasksPage() {
                         </tbody>
 
                     </table>
+                    </div>
 
                     <div
                         style={{
@@ -605,6 +654,7 @@ export default function TasksPage() {
 
                 </>
             )}
+            </div>
 
             <CreateTaskModal
                 isOpen={

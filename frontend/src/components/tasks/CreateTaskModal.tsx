@@ -155,8 +155,8 @@ export default function CreateTaskModal({
     }
 
     return (
-        <div style={overlay}>
-            <div style={modal}>
+        <div className="modal-overlay">
+            <div className="modal">
                 <h2>
                     {isEditing
                         ? "Update Task"
@@ -170,7 +170,6 @@ export default function CreateTaskModal({
                 >
                     <Field label="Title">
                         <input
-                            style={input}
                             {...register(
                                 "title",
                                 {
@@ -184,7 +183,6 @@ export default function CreateTaskModal({
 
                     <Field label="Description">
                         <textarea
-                            style={input}
                             rows={3}
                             {...register(
                                 "description"
@@ -194,7 +192,6 @@ export default function CreateTaskModal({
 
                     <Field label="Priority">
                         <select
-                            style={input}
                             {...register(
                                 "priority",
                                 {
@@ -218,7 +215,6 @@ export default function CreateTaskModal({
                     {isEditing && (
                         <Field label="Status">
                             <select
-                                style={input}
                                 {...register(
                                     "status",
                                     {
@@ -244,7 +240,6 @@ export default function CreateTaskModal({
                         <input
                             type="number"
                             min={1}
-                            style={input}
                             {...register(
                                 "estimatedHours",
                                 {
@@ -268,7 +263,6 @@ export default function CreateTaskModal({
 
                     <Field label="Required Skill">
                         <input
-                            style={input}
                             {...register(
                                 "requiredSkill",
                                 {
@@ -287,7 +281,6 @@ export default function CreateTaskModal({
                     <Field label="Due Date">
                         <input
                             type="date"
-                            style={input}
                             {...register(
                                 "dueDate",
                                 {
@@ -299,7 +292,7 @@ export default function CreateTaskModal({
                         <ErrorText message={errors.dueDate?.message} />
                     </Field>
 
-                    <div style={actions}>
+                    <div className="form-actions">
                         <button
                             type="submit"
                             disabled={submitting}
@@ -315,6 +308,7 @@ export default function CreateTaskModal({
 
                         <button
                             type="button"
+                            className="secondary-button"
                             onClick={onClose}
                             disabled={submitting}
                         >
@@ -345,8 +339,8 @@ function Field({
     children: React.ReactNode;
 }) {
     return (
-        <div style={field}>
-            <label style={labelStyle}>
+        <div className="form-field">
+            <label>
                 {label}
             </label>
             {children}
@@ -364,54 +358,8 @@ function ErrorText({
     }
 
     return (
-        <p style={errorText}>
+        <p className="form-error">
             {message}
         </p>
     );
 }
-
-const overlay: React.CSSProperties = {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.45)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 20
-};
-
-const modal: React.CSSProperties = {
-    background: "white",
-    padding: "20px",
-    width: "500px",
-    maxWidth: "calc(100vw - 32px)",
-    borderRadius: "8px"
-};
-
-const field: React.CSSProperties = {
-    marginBottom: "14px"
-};
-
-const labelStyle: React.CSSProperties = {
-    display: "block",
-    marginBottom: "6px",
-    fontWeight: 600
-};
-
-const input: React.CSSProperties = {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "8px"
-};
-
-const actions: React.CSSProperties = {
-    display: "flex",
-    gap: "10px",
-    marginTop: "18px"
-};
-
-const errorText: React.CSSProperties = {
-    color: "crimson",
-    margin: "4px 0 0",
-    fontSize: "13px"
-};
