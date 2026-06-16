@@ -8,7 +8,11 @@ class AnalyticsService:
 
     @staticmethod
     def workload_summary() -> List[Dict[str, Any]]:
-        users = list(db.users.find({}))
+        users = list(
+            db.users.find({
+                "role": {"$ne": "admin"}
+            })
+        )
         result = []
 
         for user in users:
@@ -115,6 +119,7 @@ class AnalyticsService:
             skill = task["_id"]
 
             user_count = db.users.count_documents({
+                "role": {"$ne": "admin"},
                 "skills": skill
             })
 
