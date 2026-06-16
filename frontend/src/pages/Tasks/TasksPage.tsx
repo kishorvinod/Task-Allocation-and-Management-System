@@ -13,6 +13,7 @@ import {
     deleteTask,
     assignTask,
     updateTaskStatus,
+    TaskPriority,
     TaskStatus
 } from "../../services/task.service";
 
@@ -24,10 +25,11 @@ interface Task {
     _id: string;
     title: string;
     description: string;
-    priority: string;
-    status: string;
+    priority: TaskPriority;
+    status: TaskStatus;
     requiredSkill: string;
     estimatedHours: number;
+    dueDate?: string;
 
     assignedUser?: {
         _id: string;
@@ -40,6 +42,7 @@ interface User {
     _id: string;
     name: string;
     email: string;
+    role: string;
 }
 
 export default function TasksPage() {
@@ -72,6 +75,15 @@ export default function TasksPage() {
 
     const [showCreateModal, setShowCreateModal] =
         useState(false);
+
+    const [selectedTask, setSelectedTask] =
+        useState<Task | null>(null);
+
+    const assignableUsers =
+        users.filter(
+            item =>
+                item.role !== "admin"
+        );
 
     const loadTasks =
         useCallback(async () => {
@@ -148,25 +160,16 @@ export default function TasksPage() {
         user?.role
     ]);
 
-    const handleAssign =
+    const handleAssignChange =
         async (
-            task: Task
+            task: Task,
+            userId: string
         ) => {
 
-            const userList =
-                users
-                    .map(
-                        item =>
-                            `${item.name} (${item.email}) - ${item._id}`
-                    )
-                    .join("\n");
-
-            const userId =
-                window.prompt(
-                    `Enter user id to assign:\n\n${userList}`
-                );
-
-            if (!userId) {
+            if (
+                !userId ||
+                userId === task.assignedUser?._id
+            ) {
                 return;
             }
 
@@ -174,7 +177,7 @@ export default function TasksPage() {
 
                 await assignTask(
                     task._id,
-                    userId.trim()
+                    userId
                 );
 
                 loadTasks();
@@ -187,29 +190,16 @@ export default function TasksPage() {
             }
         };
 
-    const handleStatusUpdate =
+    const handleStatusChange =
         async (
-            task: Task
+            task: Task,
+            nextStatus: TaskStatus
         ) => {
 
-            const status =
-                window.prompt(
-                    "Enter status: Pending, In Progress, Completed",
-                    task.status
-                ) as TaskStatus | null;
-
-            if (!status) {
-                return;
-            }
-
             if (
-                ![
-                    "Pending",
-                    "In Progress",
-                    "Completed"
-                ].includes(status)
+                nextStatus ===
+                task.status
             ) {
-                alert("Invalid status");
                 return;
             }
 
@@ -217,7 +207,7 @@ export default function TasksPage() {
 
                 await updateTaskStatus(
                     task._id,
-                    status
+                    nextStatus
                 );
 
                 loadTasks();
@@ -228,6 +218,14 @@ export default function TasksPage() {
                 alert("Failed to update status");
 
             }
+        };
+
+    const handleCloseModal =
+        () => {
+
+            setShowCreateModal(false);
+            setSelectedTask(null);
+
         };
 
     const handleDelete =
@@ -427,9 +425,29 @@ export default function TasksPage() {
                                         </td>
 
                                         <td style={cell}>
-                                            {
-                                                task.status
-                                            }
+                                            <select
+                                                value={
+                                                    task.status
+                                                }
+                                                onChange={(event) =>
+                                                    handleStatusChange(
+                                                        task,
+                                                        event
+                                                            .target
+                                                            .value as TaskStatus
+                                                    )
+                                                }
+                                            >
+                                                <option value="Pending">
+                                                    Pending
+                                                </option>
+                                                <option value="In Progress">
+                                                    In Progress
+                                                </option>
+                                                <option value="Completed">
+                                                    Completed
+                                                </option>
+                                            </select>
                                         </td>
 
                                         <td style={cell}>
@@ -445,12 +463,50 @@ export default function TasksPage() {
                                         </td>
 
                                         <td style={cell}>
-                                            {
+                                            {user?.role === "admin" ? (
+                                                <select
+                                                    value={
+                                                        task
+                                                            .assignedUser
+                                                            ?._id ||
+                                                        ""
+                                                    }
+                                                    onChange={(event) =>
+                                                        handleAssignChange(
+                                                            task,
+                                                            event
+                                                                .target
+                                                                .value
+                                                        )
+                                                    }
+                                                >
+                                                    <option value="">
+                                                        Select user
+                                                    </option>
+
+                                                    {assignableUsers.map(
+                                                        (
+                                                            item
+                                                        ) => (
+                                                            <option
+                                                                key={
+                                                                    item._id
+                                                                }
+                                                                value={
+                                                                    item._id
+                                                                }
+                                                            >
+                                                                {item.name} ({item.email})
+                                                            </option>
+                                                        )
+                                                    )}
+                                                </select>
+                                            ) : (
                                                 task
                                                     .assignedUser
                                                     ?.name ||
                                                 "-"
-                                            }
+                                            )}
                                         </td>
 
                                         <td style={cell}>
@@ -458,31 +514,14 @@ export default function TasksPage() {
                                             {user?.role === "admin" && (
                                                 <button
                                                     onClick={() =>
-                                                        handleAssign(
+                                                        setSelectedTask(
                                                             task
                                                         )
                                                     }
                                                 >
-                                                    Assign
+                                                    Edit
                                                 </button>
                                             )}
-
-                                            <button
-                                                style={{
-                                                    marginLeft:
-                                                        user?.role ===
-                                                            "admin"
-                                                            ? "10px"
-                                                            : 0
-                                                }}
-                                                onClick={() =>
-                                                    handleStatusUpdate(
-                                                        task
-                                                    )
-                                                }
-                                            >
-                                                Status
-                                            </button>
 
                                             {user?.role === "admin" && (
                                                 <button
@@ -568,11 +607,13 @@ export default function TasksPage() {
             )}
 
             <CreateTaskModal
-                isOpen={showCreateModal}
-                onClose={() =>
-                    setShowCreateModal(false)
+                isOpen={
+                    showCreateModal ||
+                    Boolean(selectedTask)
                 }
+                onClose={handleCloseModal}
                 onSuccess={loadTasks}
+                task={selectedTask}
             />
 
         </DashboardLayout>

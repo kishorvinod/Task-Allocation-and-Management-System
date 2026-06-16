@@ -1,23 +1,48 @@
-import { useState } from "react";
+import {
+    useEffect,
+    useState
+} from "react";
 import type React from "react";
 import { useForm } from "react-hook-form";
 
 import {
     createTask,
-    CreateTaskPayload
+    updateTask,
+    CreateTaskPayload,
+    UpdateTaskPayload
 } from "../../services/task.service";
+
+interface TaskFormValues extends CreateTaskPayload {
+    status?: "Pending" | "In Progress" | "Completed";
+}
+
+interface EditableTask {
+    _id: string;
+    title: string;
+    description?: string;
+    priority: "Low" | "Medium" | "High";
+    status: "Pending" | "In Progress" | "Completed";
+    requiredSkill: string;
+    estimatedHours: number;
+    dueDate?: string;
+}
 
 interface CreateTaskModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    task?: EditableTask | null;
 }
 
 export default function CreateTaskModal({
     isOpen,
     onClose,
-    onSuccess
+    onSuccess,
+    task
 }: CreateTaskModalProps) {
+
+    const isEditing =
+        Boolean(task);
 
     const [submitting, setSubmitting] =
         useState(false);
@@ -27,21 +52,80 @@ export default function CreateTaskModal({
         handleSubmit,
         reset,
         formState: { errors }
-    } = useForm<CreateTaskPayload>({
+    } = useForm<TaskFormValues>({
         defaultValues: {
             priority: "Medium"
         }
     });
 
+    useEffect(() => {
+
+        if (!isOpen) {
+            return;
+        }
+
+        if (task) {
+            reset({
+                title: task.title,
+                description:
+                    task.description || "",
+                priority: task.priority,
+                status: task.status,
+                estimatedHours:
+                    task.estimatedHours,
+                requiredSkill:
+                    task.requiredSkill,
+                dueDate:
+                    formatDateInput(
+                        task.dueDate
+                    )
+            });
+            return;
+        }
+
+        reset({
+            priority: "Medium"
+        });
+
+    }, [
+        isOpen,
+        reset,
+        task
+    ]);
+
     const onSubmit = async (
-        data: CreateTaskPayload
+        data: TaskFormValues
     ) => {
 
         try {
 
             setSubmitting(true);
 
-            await createTask(data);
+            if (task) {
+                const payload:
+                    UpdateTaskPayload = {
+                        title: data.title,
+                        description:
+                            data.description,
+                        priority:
+                            data.priority,
+                        status:
+                            data.status,
+                        estimatedHours:
+                            data.estimatedHours,
+                        requiredSkill:
+                            data.requiredSkill,
+                        dueDate:
+                            data.dueDate
+                    };
+
+                await updateTask(
+                    task._id,
+                    payload
+                );
+            } else {
+                await createTask(data);
+            }
 
             reset({
                 priority: "Medium"
@@ -53,7 +137,11 @@ export default function CreateTaskModal({
         } catch (error) {
 
             console.error(error);
-            alert("Failed to create task");
+            alert(
+                isEditing
+                    ? "Failed to update task"
+                    : "Failed to create task"
+            );
 
         } finally {
 
@@ -70,7 +158,9 @@ export default function CreateTaskModal({
         <div style={overlay}>
             <div style={modal}>
                 <h2>
-                    Create Task
+                    {isEditing
+                        ? "Update Task"
+                        : "Create Task"}
                 </h2>
 
                 <form
@@ -124,6 +214,31 @@ export default function CreateTaskModal({
                             </option>
                         </select>
                     </Field>
+
+                    {isEditing && (
+                        <Field label="Status">
+                            <select
+                                style={input}
+                                {...register(
+                                    "status",
+                                    {
+                                        required:
+                                            "Status is required"
+                                    }
+                                )}
+                            >
+                                <option value="Pending">
+                                    Pending
+                                </option>
+                                <option value="In Progress">
+                                    In Progress
+                                </option>
+                                <option value="Completed">
+                                    Completed
+                                </option>
+                            </select>
+                        </Field>
+                    )}
 
                     <Field label="Estimated Hours">
                         <input
@@ -190,8 +305,12 @@ export default function CreateTaskModal({
                             disabled={submitting}
                         >
                             {submitting
-                                ? "Creating..."
-                                : "Create"}
+                                ? isEditing
+                                    ? "Updating..."
+                                    : "Creating..."
+                                : isEditing
+                                    ? "Update"
+                                    : "Create"}
                         </button>
 
                         <button
@@ -206,6 +325,16 @@ export default function CreateTaskModal({
             </div>
         </div>
     );
+}
+
+function formatDateInput(
+    value?: string
+) {
+    if (!value) {
+        return "";
+    }
+
+    return value.slice(0, 10);
 }
 
 function Field({
