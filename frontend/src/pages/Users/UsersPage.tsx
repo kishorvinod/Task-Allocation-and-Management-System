@@ -41,6 +41,9 @@ export default function UsersPage() {
     const [loading, setLoading] =
         useState(true);
 
+    const [showAdmins, setShowAdmins] =
+        useState(false);
+
     const [skillsUser, setSkillsUser] =
         useState<User | null>(null);
 
@@ -101,13 +104,52 @@ export default function UsersPage() {
 
         };
 
+    const displayedUsers =
+        showAdmins
+            ? users
+            : users.filter(
+                  item =>
+                      item.role !== "admin"
+              );
+
     return (
         <DashboardLayout>
 
             <div className="page-header">
-                <h1 className="page-title">
-                    Users
-                </h1>
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px"
+                    }}
+                >
+                    <h1 className="page-title">
+                        Users
+                    </h1>
+
+                    <button
+                        type="button"
+                        className="ghost-button"
+                        title={
+                            showAdmins
+                                ? "Hide admin users"
+                                : "Show admin users"
+                        }
+                        onClick={() =>
+                            setShowAdmins(
+                                current =>
+                                    !current
+                            )
+                        }
+                        style={{
+                            padding: "7px 10px"
+                        }}
+                    >
+                        {showAdmins
+                            ? "Hide Admins"
+                            : "Show Admins"}
+                    </button>
+                </div>
             </div>
 
             <div className="panel">
@@ -130,7 +172,7 @@ export default function UsersPage() {
                             </thead>
 
                             <tbody>
-                                {users.map(
+                                {displayedUsers.map(
                                     (
                                         user
                                     ) => (
