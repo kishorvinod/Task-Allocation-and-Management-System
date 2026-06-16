@@ -15,7 +15,24 @@ const app = Fastify({ logger: true });
 registerErrorHandler(app);
 registerSwagger(app);
 
-app.register(cors);
+app.register(cors, {
+  origin: [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+  ],
+  methods: [
+    "GET",
+    "POST",
+    "PATCH",
+    "PUT",
+    "DELETE",
+    "OPTIONS"
+  ],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization"
+  ]
+});
 
 
 app.register(authRoutes, { prefix: "/api/auth" });
