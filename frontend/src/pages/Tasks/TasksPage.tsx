@@ -3,6 +3,7 @@ import {
     useEffect,
     useState
 } from "react";
+import type React from "react";
 
 import DashboardLayout from "../../layouts/DashboardLayout";
 import CreateTaskModal from "../../components/tasks/CreateTaskModal";
@@ -35,6 +36,7 @@ interface Task {
         _id: string;
         name: string;
         email?: string;
+        role?: string;
     };
 }
 
@@ -89,10 +91,27 @@ export default function TasksPage() {
             {}
         );
 
+    const isAdmin =
+        user?.role === "admin";
+
     const assignableUsers =
         users.filter(
             item =>
                 item.role !== "admin"
+        );
+
+    const myTasks =
+        tasks.filter(
+            task =>
+                task.assignedUser?._id ===
+                user?._id
+        );
+
+    const allUserTasks =
+        tasks.filter(
+            task =>
+                task.assignedUser &&
+                task.assignedUser.role !== "admin"
         );
 
     const loadTasks =
@@ -163,13 +182,13 @@ export default function TasksPage() {
 
     useEffect(() => {
 
-        if (user?.role === "admin") {
+        if (isAdmin) {
             loadUsers();
         }
 
     }, [
-        loadUsers,
-        user?.role
+        isAdmin,
+        loadUsers
     ]);
 
     const setPendingValue =
@@ -280,8 +299,9 @@ export default function TasksPage() {
                     "Delete task?"
                 );
 
-            if (!confirmDelete)
+            if (!confirmDelete) {
                 return;
+            }
 
             await deleteTask(id);
 
@@ -293,10 +313,12 @@ export default function TasksPage() {
 
             <div className="page-header">
                 <h1 className="page-title">
-                    Tasks
+                    {isAdmin
+                        ? "Tasks"
+                        : "My Tasks"}
                 </h1>
 
-                {user?.role === "admin" && (
+                {isAdmin && (
                     <button
                         onClick={() =>
                             setShowCreateModal(true)
@@ -308,352 +330,161 @@ export default function TasksPage() {
             </div>
 
             <div className="panel">
-            <div className="toolbar">
+                <div className="toolbar">
 
-                <input
-                    placeholder="Search tasks"
-                    value={search}
-                    onChange={(e) =>
-                        setSearch(
-                            e.target.value
-                        )
-                    }
-                />
+                    <input
+                        placeholder="Search tasks"
+                        value={search}
+                        onChange={(event) =>
+                            setSearch(
+                                event.target.value
+                            )
+                        }
+                    />
 
-                <select
-                    value={status}
-                    onChange={(e) =>
-                        setStatus(
-                            e.target.value
-                        )
-                    }
+                    <select
+                        value={status}
+                        onChange={(event) =>
+                            setStatus(
+                                event.target.value
+                            )
+                        }
+                    >
+                        <option value="">
+                            All Status
+                        </option>
+                        <option value="Pending">
+                            Pending
+                        </option>
+                        <option value="In Progress">
+                            In Progress
+                        </option>
+                        <option value="Completed">
+                            Completed
+                        </option>
+                    </select>
+
+                    <select
+                        value={priority}
+                        onChange={(event) =>
+                            setPriority(
+                                event.target.value
+                            )
+                        }
+                    >
+                        <option value="">
+                            All Priority
+                        </option>
+                        <option value="Low">
+                            Low
+                        </option>
+                        <option value="Medium">
+                            Medium
+                        </option>
+                        <option value="High">
+                            High
+                        </option>
+                    </select>
+
+                </div>
+
+                {loading ? (
+                    <h3>
+                        Loading...
+                    </h3>
+                ) : isAdmin ? (
+                    <TaskTable
+                        tasks={tasks}
+                        pendingChanges={
+                            pendingChanges
+                        }
+                        assignableUsers={
+                            assignableUsers
+                        }
+                        canAssign
+                        canDelete
+                        canEditDetails
+                        canEditStatus
+                        onPendingChange={
+                            setPendingValue
+                        }
+                        onSave={
+                            saveTaskChanges
+                        }
+                        onEdit={setSelectedTask}
+                        onDelete={handleDelete}
+                    />
+                ) : (
+                    <>
+                        <TaskSection
+                            title="My Tasks"
+                            description="Tasks assigned to you. Status changes are saved only after clicking Save Changes."
+                        >
+                            <TaskTable
+                                tasks={myTasks}
+                                pendingChanges={
+                                    pendingChanges
+                                }
+                                assignableUsers={[]}
+                                canEditStatus
+                                onPendingChange={
+                                    setPendingValue
+                                }
+                                onSave={
+                                    saveTaskChanges
+                                }
+                            />
+                        </TaskSection>
+
+                        <TaskSection
+                            title="All User Tasks"
+                            description="Read-only list of tasks assigned to non-admin users."
+                        >
+                            <TaskTable
+                                tasks={allUserTasks}
+                                pendingChanges={{}}
+                                assignableUsers={[]}
+                                readOnly
+                            />
+                        </TaskSection>
+                    </>
+                )}
+
+                <div
+                    style={{
+                        marginTop: "20px"
+                    }}
                 >
-                    <option value="">
-                        All Status
-                    </option>
+                    <button
+                        disabled={page === 1}
+                        onClick={() =>
+                            setPage(
+                                prev => prev - 1
+                            )
+                        }
+                    >
+                        Previous
+                    </button>
 
-                    <option value="Pending">
-                        Pending
-                    </option>
-
-                    <option value="In Progress">
-                        In Progress
-                    </option>
-
-                    <option value="Completed">
-                        Completed
-                    </option>
-                </select>
-
-                <select
-                    value={priority}
-                    onChange={(e) =>
-                        setPriority(
-                            e.target.value
-                        )
-                    }
-                >
-                    <option value="">
-                        All Priority
-                    </option>
-
-                    <option value="Low">
-                        Low
-                    </option>
-
-                    <option value="Medium">
-                        Medium
-                    </option>
-
-                    <option value="High">
-                        High
-                    </option>
-                </select>
-
-            </div>
-
-            {loading ? (
-
-                <h3>
-                    Loading...
-                </h3>
-
-            ) : (
-
-                <>
-                    <div className="table-wrap">
-                    <table className="data-table">
-
-                        <thead>
-
-                            <tr>
-
-                                <th style={header}>
-                                    Title
-                                </th>
-
-                                <th style={header}>
-                                    Priority
-                                </th>
-
-                                <th style={header}>
-                                    Status
-                                </th>
-
-                                <th style={header}>
-                                    Skill
-                                </th>
-
-                                <th style={header}>
-                                    Hours
-                                </th>
-
-                                <th style={header}>
-                                    Assigned
-                                </th>
-
-                                <th style={header}>
-                                    Actions
-                                </th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-
-                            {tasks.map(
-                                (
-                                    task
-                                ) => (
-
-                                    <tr
-                                        key={
-                                            task._id
-                                        }
-                                    >
-
-                                        <td style={cell}>
-                                            {
-                                                task.title
-                                            }
-                                        </td>
-
-                                        <td style={cell}>
-                                            {
-                                                task.priority
-                                            }
-                                        </td>
-
-                                        <td style={cell}>
-                                            <select
-                                                value={
-                                                    pendingChanges[
-                                                        task
-                                                            ._id
-                                                    ]?.status ||
-                                                    task.status
-                                                }
-                                                onChange={(event) =>
-                                                    setPendingValue(
-                                                        task,
-                                                        {
-                                                            status:
-                                                                event
-                                                                    .target
-                                                                    .value as TaskStatus
-                                                        }
-                                                    )
-                                                }
-                                            >
-                                                <option value="Pending">
-                                                    Pending
-                                                </option>
-                                                <option value="In Progress">
-                                                    In Progress
-                                                </option>
-                                                <option value="Completed">
-                                                    Completed
-                                                </option>
-                                            </select>
-                                        </td>
-
-                                        <td style={cell}>
-                                            {
-                                                task.requiredSkill
-                                            }
-                                        </td>
-
-                                        <td style={cell}>
-                                            {
-                                                task.estimatedHours
-                                            }
-                                        </td>
-
-                                        <td style={cell}>
-                                            {user?.role === "admin" ? (
-                                                <select
-                                                    value={
-                                                        pendingChanges[
-                                                            task
-                                                                ._id
-                                                        ]?.assignedUserId ??
-                                                        task
-                                                            .assignedUser
-                                                            ?._id ??
-                                                        ""
-                                                    }
-                                                    onChange={(event) =>
-                                                        setPendingValue(
-                                                            task,
-                                                            {
-                                                                assignedUserId:
-                                                                    event
-                                                                        .target
-                                                                        .value
-                                                            }
-                                                        )
-                                                    }
-                                                >
-                                                    <option value="">
-                                                        Select user
-                                                    </option>
-
-                                                    {assignableUsers.map(
-                                                        (
-                                                            item
-                                                        ) => (
-                                                            <option
-                                                                key={
-                                                                    item._id
-                                                                }
-                                                                value={
-                                                                    item._id
-                                                                }
-                                                            >
-                                                                {item.name} ({item.email})
-                                                            </option>
-                                                        )
-                                                    )}
-                                                </select>
-                                            ) : (
-                                                task
-                                                    .assignedUser
-                                                    ?.name ||
-                                                "-"
-                                            )}
-                                        </td>
-
-                                        <td style={cell}>
-                                            <div className="action-row">
-
-                                            {user?.role === "admin" && (
-                                                <button
-                                                    onClick={() =>
-                                                        setSelectedTask(
-                                                            task
-                                                        )
-                                                    }
-                                                >
-                                                    Edit
-                                                </button>
-                                            )}
-
-                                            {pendingChanges[
-                                                task._id
-                                            ] && (
-                                                <button
-                                                    onClick={() =>
-                                                        saveTaskChanges(
-                                                            task
-                                                        )
-                                                    }
-                                                >
-                                                    Save Changes
-                                                </button>
-                                            )}
-
-                                            {user?.role === "admin" && (
-                                                <button
-                                                    className="danger-button"
-                                                    onClick={() =>
-                                                        handleDelete(
-                                                            task._id
-                                                        )
-                                                    }
-                                                >
-                                                    Delete
-                                                </button>
-                                            )}
-                                            </div>
-
-                                        </td>
-
-                                    </tr>
-
-                                )
-                            )}
-
-                        </tbody>
-
-                    </table>
-                    </div>
-
-                    <div
+                    <span
                         style={{
-                            marginTop:
-                                "20px"
+                            margin: "0 10px"
                         }}
                     >
+                        Page {page}
+                    </span>
 
-                        <button
-                            disabled={
-                                page === 1
-                            }
-                            onClick={() =>
-                                setPage(
-                                    (
-                                        prev
-                                    ) =>
-                                        prev -
-                                        1
-                                )
-                            }
-                        >
-                            Previous
-                        </button>
-
-                        <span
-                            style={{
-                                margin:
-                                    "0 10px"
-                            }}
-                        >
-                            Page {page}
-                        </span>
-
-                        <button
-                            disabled={
-                                page >=
-                                totalPages
-                            }
-                            onClick={() =>
-                                setPage(
-                                    (
-                                        prev
-                                    ) =>
-                                        prev +
-                                        1
-                                )
-                            }
-                        >
-                            Next
-                        </button>
-
-                    </div>
-
-                </>
-            )}
+                    <button
+                        disabled={page >= totalPages}
+                        onClick={() =>
+                            setPage(
+                                prev => prev + 1
+                            )
+                        }
+                    >
+                        Next
+                    </button>
+                </div>
             </div>
 
             <CreateTaskModal
@@ -670,13 +501,238 @@ export default function TasksPage() {
     );
 }
 
-const header = {
-    border: "1px solid #ddd",
-    padding: "10px",
-    background: "#f5f5f5"
-};
+function TaskSection({
+    title,
+    description,
+    children
+}: {
+    title: string;
+    description: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div
+            style={{
+                marginBottom: "28px"
+            }}
+        >
+            <div className="section-heading">
+                <div>
+                    <h2>
+                        {title}
+                    </h2>
+                    <p className="muted">
+                        {description}
+                    </p>
+                </div>
+            </div>
+            {children}
+        </div>
+    );
+}
 
-const cell = {
-    border: "1px solid #ddd",
-    padding: "10px"
-};
+function TaskTable({
+    tasks,
+    pendingChanges,
+    assignableUsers,
+    canAssign = false,
+    canDelete = false,
+    canEditDetails = false,
+    canEditStatus = false,
+    readOnly = false,
+    onPendingChange,
+    onSave,
+    onEdit,
+    onDelete
+}: {
+    tasks: Task[];
+    pendingChanges: Record<string, PendingTaskChange>;
+    assignableUsers: User[];
+    canAssign?: boolean;
+    canDelete?: boolean;
+    canEditDetails?: boolean;
+    canEditStatus?: boolean;
+    readOnly?: boolean;
+    onPendingChange?: (
+        task: Task,
+        change: PendingTaskChange
+    ) => void;
+    onSave?: (task: Task) => void;
+    onEdit?: (task: Task) => void;
+    onDelete?: (id: string) => void;
+}) {
+    if (tasks.length === 0) {
+        return (
+            <p className="muted">
+                No tasks found.
+            </p>
+        );
+    }
+
+    const showActions =
+        !readOnly &&
+        (
+            canEditDetails ||
+            canDelete ||
+            canEditStatus
+        );
+
+    return (
+        <div className="table-wrap">
+            <table className="data-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Skill</th>
+                        <th>Hours</th>
+                        <th>Assigned</th>
+                        {showActions && (
+                            <th>Actions</th>
+                        )}
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {tasks.map(
+                        task => (
+                            <tr key={task._id}>
+                                <td>{task.title}</td>
+                                <td>{task.priority}</td>
+                                <td>
+                                    {canEditStatus ? (
+                                        <select
+                                            value={
+                                                pendingChanges[
+                                                    task._id
+                                                ]?.status ||
+                                                task.status
+                                            }
+                                            onChange={(event) =>
+                                                onPendingChange?.(
+                                                    task,
+                                                    {
+                                                        status:
+                                                            event
+                                                                .target
+                                                                .value as TaskStatus
+                                                    }
+                                                )
+                                            }
+                                        >
+                                            <option value="Pending">
+                                                Pending
+                                            </option>
+                                            <option value="In Progress">
+                                                In Progress
+                                            </option>
+                                            <option value="Completed">
+                                                Completed
+                                            </option>
+                                        </select>
+                                    ) : (
+                                        task.status
+                                    )}
+                                </td>
+                                <td>{task.requiredSkill}</td>
+                                <td>{task.estimatedHours}</td>
+                                <td>
+                                    {canAssign ? (
+                                        <select
+                                            value={
+                                                pendingChanges[
+                                                    task._id
+                                                ]?.assignedUserId ??
+                                                task
+                                                    .assignedUser
+                                                    ?._id ??
+                                                ""
+                                            }
+                                            onChange={(event) =>
+                                                onPendingChange?.(
+                                                    task,
+                                                    {
+                                                        assignedUserId:
+                                                            event
+                                                                .target
+                                                                .value
+                                                    }
+                                                )
+                                            }
+                                        >
+                                            <option value="">
+                                                Select user
+                                            </option>
+                                            {assignableUsers.map(
+                                                item => (
+                                                    <option
+                                                        key={
+                                                            item._id
+                                                        }
+                                                        value={
+                                                            item._id
+                                                        }
+                                                    >
+                                                        {item.name} ({item.email})
+                                                    </option>
+                                                )
+                                            )}
+                                        </select>
+                                    ) : (
+                                        task.assignedUser
+                                            ?.name || "-"
+                                    )}
+                                </td>
+                                {showActions && (
+                                    <td>
+                                        <div className="action-row">
+                                            {canEditDetails && (
+                                                <button
+                                                    onClick={() =>
+                                                        onEdit?.(
+                                                            task
+                                                        )
+                                                    }
+                                                >
+                                                    Edit
+                                                </button>
+                                            )}
+
+                                            {pendingChanges[
+                                                task._id
+                                            ] && (
+                                                <button
+                                                    onClick={() =>
+                                                        onSave?.(
+                                                            task
+                                                        )
+                                                    }
+                                                >
+                                                    Save Changes
+                                                </button>
+                                            )}
+
+                                            {canDelete && (
+                                                <button
+                                                    className="danger-button"
+                                                    onClick={() =>
+                                                        onDelete?.(
+                                                            task._id
+                                                        )
+                                                    }
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
+                                        </div>
+                                    </td>
+                                )}
+                            </tr>
+                        )
+                    )}
+                </tbody>
+            </table>
+        </div>
+    );
+}

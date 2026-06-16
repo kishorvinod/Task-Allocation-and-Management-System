@@ -28,7 +28,7 @@ export default function DashboardLayout({
         <div className="app-shell">
             <aside className="sidebar">
                 <h2>
-                    Task Manager
+                    Task Allocation & Management System
                 </h2>
 
                 <hr />
