@@ -4,6 +4,8 @@ import swagger from "@fastify/swagger";
 import swaggerUI from "@fastify/swagger-ui";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { userRoutes } from "./modules/users/user.routes";
+import { taskRoutes } from "./modules/tasks/task.routes";
+
 
 
 
@@ -34,6 +36,7 @@ app.register(swaggerUI, {routePrefix: "/docs"});
 
 app.register(authRoutes,{  prefix: "/api/auth"});
 app.register(userRoutes,{  prefix: "/api/users"});
+app.register(taskRoutes,{  prefix: "/api/tasks"});
 
 app.get("/health", async () => {
   return {
