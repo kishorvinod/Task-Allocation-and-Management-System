@@ -34,6 +34,75 @@ export class UserController {
         });
     }
 
+    static async updateUser(
+        request: FastifyRequest<{
+            Params: { id: string };
+            Body: {
+                name?: string;
+                email?: string;
+                password?: string;
+                role?: "admin" | "user";
+                skills?: string[];
+                availableHoursPerDay?: number;
+                workingDays?: string[];
+            };
+        }>,
+        reply: FastifyReply
+    ) {
+        try {
+            const user =
+                await UserService.updateUser(
+                    request.params.id,
+                    request.body
+                );
+
+            if (!user) {
+                return reply.status(404).send({
+                    success: false,
+                    message: "User not found"
+                });
+            }
+
+            return reply.send({
+                success: true,
+                message:
+                    "User updated successfully",
+                data: user
+            });
+        } catch (error: any) {
+            return reply.status(400).send({
+                success: false,
+                message: error.message
+            });
+        }
+    }
+
+    static async deleteUser(
+        request: FastifyRequest<{
+            Params: { id: string };
+        }>,
+        reply: FastifyReply
+    ) {
+        const user =
+            await UserService.deleteUser(
+                request.params.id
+            );
+
+        if (!user) {
+            return reply.status(404).send({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        return reply.send({
+            success: true,
+            message:
+                "User deleted successfully",
+            data: user
+        });
+    }
+
     static async updateSkills(
         request: FastifyRequest<{
             Params: { id: string };

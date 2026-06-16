@@ -30,6 +30,83 @@ export async function userRoutes(
     UserController.getUser
   );
 
+  fastify.put<{
+    Params: {
+      id: string;
+    };
+    Body: {
+      name?: string;
+      email?: string;
+      password?: string;
+      role?: "admin" | "user";
+      skills?: string[];
+      availableHoursPerDay?: number;
+      workingDays?: string[];
+    };
+  }>(
+    "/:id",
+    {
+      schema: {
+        body: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string"
+            },
+            email: {
+              type: "string"
+            },
+            password: {
+              type: "string"
+            },
+            role: {
+              type: "string",
+              enum: [
+                "admin",
+                "user"
+              ]
+            },
+            skills: {
+              type: "array",
+              items: {
+                type: "string"
+              }
+            },
+            availableHoursPerDay: {
+              type: "number"
+            },
+            workingDays: {
+              type: "array",
+              items: {
+                type: "string"
+              }
+            }
+          }
+        }
+      },
+      preHandler: [
+        verifyToken,
+        allowRoles("admin")
+      ]
+    },
+    UserController.updateUser
+  );
+
+  fastify.delete<{
+    Params: {
+      id: string;
+    };
+  }>(
+    "/:id",
+    {
+      preHandler: [
+        verifyToken,
+        allowRoles("admin")
+      ]
+    },
+    UserController.deleteUser
+  );
+
   fastify.patch(
     "/:id/skills",
     {

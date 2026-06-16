@@ -7,6 +7,8 @@ import DashboardLayout from "../../layouts/DashboardLayout";
 
 import {
     getUsers,
+    updateUser,
+    deleteUser,
     updateSkills,
     updateAvailability
 } from "../../services/user.service";
@@ -42,6 +44,9 @@ export default function UsersPage() {
     const [skillsUser, setSkillsUser] =
         useState<User | null>(null);
 
+    const [editUser, setEditUser] =
+        useState<User | null>(null);
+
     const [
         availabilityUser,
         setAvailabilityUser
@@ -70,6 +75,30 @@ export default function UsersPage() {
                 setLoading(false);
 
             }
+        };
+
+    const handleDeleteUser =
+        async (
+            user: User
+        ) => {
+
+            const confirmed =
+                window.confirm(
+                    `Delete user ${user.name}?`
+                );
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                await deleteUser(user._id);
+                loadUsers();
+            } catch (error) {
+                console.error(error);
+                alert("Failed to delete user");
+            }
+
         };
 
     return (
@@ -176,6 +205,17 @@ export default function UsersPage() {
                                                 <div className="action-row">
                                                     <button
                                                         onClick={() =>
+                                                            setEditUser(
+                                                                user
+                                                            )
+                                                        }
+                                                    >
+                                                        Edit
+                                                    </button>
+
+                                                    <button
+                                                        className="secondary-button"
+                                                        onClick={() =>
                                                             setSkillsUser(
                                                                 user
                                                             )
@@ -194,6 +234,17 @@ export default function UsersPage() {
                                                     >
                                                         Availability
                                                     </button>
+
+                                                    <button
+                                                        className="danger-button"
+                                                        onClick={() =>
+                                                            handleDeleteUser(
+                                                                user
+                                                            )
+                                                        }
+                                                    >
+                                                        Delete
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -204,6 +255,28 @@ export default function UsersPage() {
                     </div>
                 )}
             </div>
+
+            <EditUserModal
+                user={editUser}
+                onClose={() =>
+                    setEditUser(null)
+                }
+                onSave={async (
+                    payload
+                ) => {
+                    if (!editUser) {
+                        return;
+                    }
+
+                    await updateUser(
+                        editUser._id,
+                        payload
+                    );
+
+                    setEditUser(null);
+                    loadUsers();
+                }}
+            />
 
             <SkillsModal
                 user={skillsUser}
@@ -252,6 +325,182 @@ export default function UsersPage() {
             />
 
         </DashboardLayout>
+    );
+}
+
+function EditUserModal({
+    user,
+    onClose,
+    onSave
+}: {
+    user: User | null;
+    onClose: () => void;
+    onSave: (payload: {
+        name: string;
+        email: string;
+        password?: string;
+        role: "admin" | "user";
+    }) => Promise<void>;
+}) {
+
+    const [name, setName] =
+        useState("");
+
+    const [email, setEmail] =
+        useState("");
+
+    const [password, setPassword] =
+        useState("");
+
+    const [role, setRole] =
+        useState<"admin" | "user">(
+            "user"
+        );
+
+    const [submitting, setSubmitting] =
+        useState(false);
+
+    useEffect(() => {
+
+        setName(user?.name || "");
+        setEmail(user?.email || "");
+        setPassword("");
+        setRole(
+            user?.role === "admin"
+                ? "admin"
+                : "user"
+        );
+
+    }, [user]);
+
+    if (!user) {
+        return null;
+    }
+
+    const save =
+        async () => {
+
+            if (
+                !name.trim() ||
+                !email.trim()
+            ) {
+                alert("Name and email are required");
+                return;
+            }
+
+            try {
+                setSubmitting(true);
+
+                await onSave({
+                    name: name.trim(),
+                    email: email.trim(),
+                    role,
+                    ...(password.trim()
+                        ? {
+                              password:
+                                  password.trim()
+                          }
+                        : {})
+                });
+            } catch (error) {
+                console.error(error);
+                alert("Failed to update user");
+            } finally {
+                setSubmitting(false);
+            }
+
+        };
+
+    return (
+        <div className="modal-overlay">
+            <div className="modal">
+                <h2>
+                    Update User
+                </h2>
+
+                <div className="form-field">
+                    <label>Name</label>
+                    <input
+                        value={name}
+                        onChange={(event) =>
+                            setName(
+                                event.target.value
+                            )
+                        }
+                    />
+                </div>
+
+                <div className="form-field">
+                    <label>Email</label>
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(event) =>
+                            setEmail(
+                                event.target.value
+                            )
+                        }
+                    />
+                </div>
+
+                <div className="form-field">
+                    <label>Role</label>
+                    <select
+                        value={role}
+                        onChange={(event) =>
+                            setRole(
+                                event.target
+                                    .value as
+                                    | "admin"
+                                    | "user"
+                            )
+                        }
+                    >
+                        <option value="user">
+                            User
+                        </option>
+                        <option value="admin">
+                            Admin
+                        </option>
+                    </select>
+                </div>
+
+                <div className="form-field">
+                    <label>
+                        New Password
+                    </label>
+                    <input
+                        type="password"
+                        value={password}
+                        placeholder="Leave blank to keep current password"
+                        onChange={(event) =>
+                            setPassword(
+                                event.target.value
+                            )
+                        }
+                    />
+                </div>
+
+                <div className="form-actions">
+                    <button
+                        type="button"
+                        onClick={save}
+                        disabled={submitting}
+                    >
+                        Save
+                    </button>
+
+                    <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={onClose}
+                        disabled={submitting}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 }
 
