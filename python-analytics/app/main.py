@@ -1,11 +1,23 @@
 from fastapi import FastAPI
 
-from app.analytics import get_workload_summary
-
-app = FastAPI(
-    title="Analytics Service"
+from app.routers.analytics_router import (
+    router as analytics_router
 )
 
-@app.get("/analytics/workload")
-def workload():
-    return get_workload_summary()
+app = FastAPI(
+    title="Task Analytics Service"
+)
+
+app.include_router(
+    analytics_router
+)
+
+@app.get("/")
+def health():
+
+    return {
+        "service":
+        "analytics",
+        "status":
+        "running"
+    }
