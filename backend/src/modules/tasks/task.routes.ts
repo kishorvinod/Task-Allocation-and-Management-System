@@ -13,6 +13,43 @@ export async function taskRoutes(
   fastify.post(
     "/",
     {
+      schema: {
+        body: {
+          type: "object",
+          required: [
+            "title",
+            "priority",
+            "estimatedHours",
+            "requiredSkill",
+            "dueDate"
+          ],
+          properties: {
+            title: {
+              type: "string"
+            },
+            description: {
+              type: "string"
+            },
+            priority: {
+              type: "string",
+              enum: [
+                "Low",
+                "Medium",
+                "High"
+              ]
+            },
+            estimatedHours: {
+              type: "number"
+            },
+            requiredSkill: {
+              type: "string"
+            },
+            dueDate: {
+              type: "string"
+            }
+          }
+        }
+      },
       preHandler: [
         verifyToken,
         allowRoles("admin")
@@ -44,6 +81,47 @@ export async function taskRoutes(
   fastify.put(
     "/:id",
     {
+      schema: {
+        body: {
+          type: "object",
+          properties: {
+            title: {
+              type: "string"
+            },
+            description: {
+              type: "string"
+            },
+            status: {
+              type: "string",
+              enum: [
+                "Pending",
+                "In Progress",
+                "Completed"
+              ]
+            },
+            priority: {
+              type: "string",
+              enum: [
+                "Low",
+                "Medium",
+                "High"
+              ]
+            },
+            estimatedHours: {
+              type: "number"
+            },
+            requiredSkill: {
+              type: "string"
+            },
+            assignedUser: {
+              type: "string"
+            },
+            dueDate: {
+              type: "string"
+            }
+          }
+        }
+      },
       preHandler: [
         verifyToken,
         allowRoles("admin"),
@@ -68,6 +146,19 @@ export async function taskRoutes(
   fastify.patch(
     "/:id/assign",
     {
+      schema: {
+        body: {
+          type: "object",
+          required: [
+            "userId"
+          ],
+          properties: {
+            userId: {
+              type: "string"
+            }
+          }
+        }
+      },
       preHandler: [
         verifyToken,
         allowRoles("admin"),
@@ -80,6 +171,24 @@ export async function taskRoutes(
   fastify.patch(
     "/:id/status",
     {
+      schema: {
+        body: {
+          type: "object",
+          required: [
+            "status"
+          ],
+          properties: {
+            status: {
+              type: "string",
+              enum: [
+                "Pending",
+                "In Progress",
+                "Completed"
+              ]
+            }
+          }
+        }
+      },
       preHandler: [
         verifyToken,
         taskOwnerOrAdmin
