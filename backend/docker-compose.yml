@@ -1,0 +1,28 @@
+##For Database creation , used mongoDB docker image and created a container named tams-mongo. 
+##The database is accessible on port 27017. The root username and password for the database are set to 'admin' and 'admin123' respectively. 
+##The database data is persisted using a Docker volume named 'mongo_data'.
+##Then connected with mongoDB compass to view the database and collections.
+
+version: "3.8"
+
+services:
+
+  mongodb:
+    image: mongo:8
+
+    container_name: tams-mongo #task allocation and management system
+
+    restart: always
+
+    ports:
+      - "27017:27017"
+
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
