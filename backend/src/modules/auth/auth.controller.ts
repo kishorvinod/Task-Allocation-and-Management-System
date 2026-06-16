@@ -2,6 +2,28 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { AuthService } from "./auth.service";
 
 export class AuthController {
+    static async me(
+        request: FastifyRequest,
+        reply: FastifyReply
+    ) {
+        try {
+            const user =
+                await AuthService.getMe(
+                    request.user!.userId
+                );
+
+            return reply.send({
+                success: true,
+                data: user
+            });
+        } catch (error: any) {
+            return reply.status(404).send({
+                success: false,
+                message: error.message
+            });
+        }
+    }
+
     static async register(
         request: FastifyRequest,
         reply: FastifyReply
