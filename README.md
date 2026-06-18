@@ -3,7 +3,7 @@
 
 ##  Overview
 
-This is a **Task Management System** built using a **monorepo architecture**, containing both the **frontend** and **backend** applications in a single repository.
+This is a **Task Allocation and Management System** built using a **monorepo architecture**, containing both the **frontend** and **backend** applications in a single repository.
 
 The system supports:
 

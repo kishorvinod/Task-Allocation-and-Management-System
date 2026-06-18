@@ -2,7 +2,7 @@
 
 ## Overview
 
-This backend application provides REST APIs for a Task Management System built using Fastify, TypeScript, MongoDB, and JWT Authentication.
+This backend application provides REST APIs for a Task Allocation Management System built using Fastify, TypeScript, MongoDB, and JWT Authentication.
 
 The system supports:
 
