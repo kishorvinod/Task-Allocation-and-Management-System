@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from fastapi.responses import FileResponse
 
 from app.services.analytics_service import (
     AnalyticsService
@@ -55,6 +56,20 @@ def skill_demand():
 def completion_summary():
     return AnalyticsService\
         .task_completion_summary()
+
+
+@router.get(
+    "/task-completion-summary/download"
+)
+def download_completion_summary():
+    file_path = AnalyticsService\
+        .task_completion_summary_excel()
+
+    return FileResponse(
+        path=file_path,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=file_path.name
+    )
 
 
 @router.get(

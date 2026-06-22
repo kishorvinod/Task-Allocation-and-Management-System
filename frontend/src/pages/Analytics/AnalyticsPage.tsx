@@ -6,6 +6,7 @@ import type React from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
+    downloadCompletionSummaryExcel,
     getAnalyticsOverview
 } from "../../services/analytics.service";
 
@@ -74,6 +75,12 @@ export default function AnalyticsPage() {
     const [error, setError] =
         useState("");
 
+    const [downloadError, setDownloadError] =
+        useState("");
+
+    const [downloadingCompletion, setDownloadingCompletion] =
+        useState(false);
+
     useEffect(() => {
 
         loadAnalytics();
@@ -103,6 +110,30 @@ export default function AnalyticsPage() {
             } finally {
 
                 setLoading(false);
+
+            }
+        };
+
+    const handleCompletionDownload =
+        async () => {
+
+            try {
+
+                setDownloadError("");
+                setDownloadingCompletion(true);
+
+                await downloadCompletionSummaryExcel();
+
+            } catch (err) {
+
+                console.error(err);
+                setDownloadError(
+                    "Unable to download task completion summary."
+                );
+
+            } finally {
+
+                setDownloadingCompletion(false);
 
             }
         };
@@ -355,6 +386,21 @@ export default function AnalyticsPage() {
                             endpoint="/analytics/task-completion-summary"
                             purpose="Provides overall project progress statistics."
                             logic="Completion rate = completed tasks / total tasks x 100."
+                            action={
+                                <button
+                                    className="secondary-button"
+                                    disabled={
+                                        downloadingCompletion
+                                    }
+                                    onClick={
+                                        handleCompletionDownload
+                                    }
+                                >
+                                    {downloadingCompletion
+                                        ? "Downloading..."
+                                        : "Download Excel"}
+                                </button>
+                            }
                         >
                             <ProgressBar
                                 label="Completed"
@@ -385,6 +431,11 @@ export default function AnalyticsPage() {
                                     ]
                                 ]}
                             />
+                            {downloadError && (
+                                <p className="form-error">
+                                    {downloadError}
+                                </p>
+                            )}
                         </Panel>
 
                         <Panel
@@ -497,6 +548,7 @@ function Panel({
     endpoint,
     purpose,
     logic,
+    action,
     wide = false,
     children
 }: {
@@ -504,6 +556,7 @@ function Panel({
     endpoint?: string;
     purpose?: string;
     logic?: string;
+    action?: React.ReactNode;
     wide?: boolean;
     children: React.ReactNode;
 }) {
@@ -515,11 +568,14 @@ function Panel({
         >
             <div className="analytics-panel-header">
                 <h2>{title}</h2>
-                {endpoint && (
-                    <span className="tag analytics-endpoint">
-                        GET {endpoint}
-                    </span>
-                )}
+                <div className="analytics-panel-actions">
+                    {action}
+                    {endpoint && (
+                        <span className="tag analytics-endpoint">
+                            GET {endpoint}
+                        </span>
+                    )}
+                </div>
             </div>
             {purpose && (
                 <p>

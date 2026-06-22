@@ -56,3 +56,55 @@ export const getAnalyticsOverview =
             hoursByStatus: hoursByStatus.data
         };
     };
+
+export const downloadCompletionSummaryExcel =
+    async () => {
+
+        const response =
+            await analyticsApi.get(
+                "/analytics/task-completion-summary/download",
+                {
+                    responseType: "blob"
+                }
+            );
+
+        const filename =
+            getFilenameFromHeader(
+                response.headers[
+                    "content-disposition"
+                ]
+            ) ||
+            "task-completion-summary.xlsx";
+
+        const blob = new Blob(
+            [response.data],
+            {
+                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            }
+        );
+
+        const url =
+            window.URL.createObjectURL(blob);
+        const link =
+            document.createElement("a");
+
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    };
+
+function getFilenameFromHeader(
+    header?: string
+) {
+    if (!header) {
+        return "";
+    }
+
+    const match =
+        header.match(/filename="?([^"]+)"?/);
+
+    return match?.[1] || "";
+}

@@ -385,6 +385,14 @@ textarea {
   color: #0f172a;
 }
 
+.analytics-panel-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .analytics-endpoint {
   flex: 0 0 auto;
   border-radius: 6px;
@@ -436,9 +444,13 @@ textarea {
     display: block;
   }
 
+  .analytics-panel-actions {
+    justify-content: flex-start;
+    margin-top: 10px;
+  }
+
   .analytics-endpoint {
     display: inline-block;
-    margin-top: 10px;
   }
 }
 
