@@ -1,5 +1,9 @@
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import List, Dict, Any
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
 
 from app.database import db
 
@@ -147,6 +151,67 @@ class AnalyticsService:
             "inProgressTasks": in_progress,
             "completionRate": round(completion_rate, 2),
         }
+
+    @staticmethod
+    def task_completion_summary_excel() -> Path:
+        summary = AnalyticsService.task_completion_summary()
+        data_dir = Path(__file__).resolve().parents[1] / "data"
+        data_dir.mkdir(parents=True, exist_ok=True)
+
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        file_path = (
+            data_dir /
+            f"task-completion-summary-{timestamp}.xlsx"
+        )
+
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.title = "Completion Summary"
+
+        worksheet.append([
+            "Metric",
+            "Value"
+        ])
+        worksheet.append([
+            "Total Tasks",
+            summary["totalTasks"]
+        ])
+        worksheet.append([
+            "Pending Tasks",
+            summary["pendingTasks"]
+        ])
+        worksheet.append([
+            "In Progress Tasks",
+            summary["inProgressTasks"]
+        ])
+        worksheet.append([
+            "Completed Tasks",
+            summary["completedTasks"]
+        ])
+        worksheet.append([
+            "Completion Rate",
+            f"{summary['completionRate']}%"
+        ])
+        worksheet.append([
+            "Generated At UTC",
+            datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        ])
+
+        header_fill = PatternFill(
+            fill_type="solid",
+            fgColor="DBEAFE"
+        )
+
+        for cell in worksheet[1]:
+            cell.font = Font(bold=True)
+            cell.fill = header_fill
+
+        worksheet.column_dimensions["A"].width = 26
+        worksheet.column_dimensions["B"].width = 22
+
+        workbook.save(file_path)
+
+        return file_path
 
     @staticmethod
     def priority_workload() -> List[Dict[str, Any]]:

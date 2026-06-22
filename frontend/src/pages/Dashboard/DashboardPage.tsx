@@ -15,6 +15,17 @@ import {
     updateSkills
 } from "../../services/user.service";
 
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    Tooltip,
+    ResponsiveContainer,
+    CartesianGrid,
+    Cell
+} from "recharts";
+
 interface DashboardStats {
     totalTasks: number;
     pendingTasks: number;
@@ -33,8 +44,13 @@ const weekDays = [
     "Sunday"
 ];
 
-export default function DashboardPage() {
+const taskStatusColors = {
+    pending: "#f39c12",
+    inProgress: "#3498db",
+    completed: "#2ecc71"
+};
 
+export default function DashboardPage() {
     const { user, setUser } = useAuth();
 
     const [stats, setStats] =
@@ -54,39 +70,24 @@ export default function DashboardPage() {
     ] = useState(false);
 
     useEffect(() => {
-
         fetchDashboardData();
-
     }, []);
 
     const fetchDashboardData =
         async () => {
-
             try {
-
                 const statsResponse =
                     await getDashboardStats();
 
-                setStats(
-                    statsResponse.data
-                );
-
+                setStats(statsResponse.data);
             } catch (error) {
-
-                console.error(
-                    "Dashboard Error",
-                    error
-                );
-
+                console.error("Dashboard Error", error);
             } finally {
-
                 setLoading(false);
-
             }
         };
 
     if (loading) {
-
         return (
             <DashboardLayout>
                 <h2>
@@ -106,9 +107,26 @@ export default function DashboardPage() {
         (user?.availableHoursPerDay || 0) *
         workingDays.length;
 
+    const taskStatusChartData = [
+        {
+            label: "Pending",
+            value: stats?.pendingTasks || 0,
+            color: taskStatusColors.pending
+        },
+        {
+            label: "In Progress",
+            value: stats?.inProgressTasks || 0,
+            color: taskStatusColors.inProgress
+        },
+        {
+            label: "Completed",
+            value: stats?.completedTasks || 0,
+            color: taskStatusColors.completed
+        }
+    ];
+
     return (
         <DashboardLayout>
-
             <div className="page-header">
                 <h1 className="page-title">
                     Dashboard
@@ -159,6 +177,17 @@ export default function DashboardPage() {
                                 stats?.completedTasks ||
                                 0
                             }
+                        />
+                    </div>
+
+                    <div
+                        style={{
+                            marginTop: "24px"
+                        }}
+                    >
+                        <TaskStatusChart
+                            title="Task Status"
+                            data={taskStatusChartData}
                         />
                     </div>
                 </div>
@@ -328,6 +357,17 @@ export default function DashboardPage() {
                         />
                     </div>
 
+                    <div
+                        style={{
+                            marginTop: "24px"
+                        }}
+                    >
+                        <TaskStatusChart
+                            title="Task Status"
+                            data={taskStatusChartData}
+                        />
+                    </div>
+
                     <SkillsModal
                         isOpen={showSkillsModal}
                         skills={skills}
@@ -391,6 +431,129 @@ export default function DashboardPage() {
             )}
 
         </DashboardLayout>
+    );
+}
+
+function PieChart({
+    title,
+    data
+}: {
+    title: string;
+    data: {
+        label: string;
+        value: number;
+        color: string;
+    }[];
+}) {
+    const total = data.reduce(
+        (sum, item) => sum + item.value,
+        0
+    );
+
+    if (total === 0) {
+        return (
+            <div className="panel">
+                <h2>{title}</h2>
+                <p className="muted">
+                    No data available for chart.
+                </p>
+            </div>
+        );
+    }
+
+    let offset = 0;
+    const radius = 100;
+    const circumference = 2 * Math.PI * radius;
+
+    return (
+        <div className="panel">
+            <h2>{title}</h2>
+
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "24px",
+                    flexWrap: "wrap"
+                }}
+            >
+                <svg
+                    width="240"
+                    height="240"
+                    viewBox="0 0 240 240"
+                    style={{
+                        flexShrink: 0
+                    }}
+                >
+                    <circle
+                        cx="120"
+                        cy="120"
+                        r={radius}
+                        fill="none"
+                        stroke="#f0f0f0"
+                        strokeWidth="40"
+                    />
+                    {data.map((segment) => {
+                        const dash =
+                            (segment.value / total) *
+                            circumference;
+                        const strokeDasharray = `${dash} ${circumference}`;
+                        const strokeDashoffset =
+                            circumference - offset;
+                        offset += dash;
+
+                        return (
+                            <circle
+                                key={segment.label}
+                                cx="120"
+                                cy="120"
+                                r={radius}
+                                fill="none"
+                                stroke={segment.color}
+                                strokeWidth="40"
+                                strokeDasharray={
+                                    strokeDasharray
+                                }
+                                strokeDashoffset={
+                                    strokeDashoffset
+                                }
+                                strokeLinecap="butt"
+                                transform="rotate(-90 120 120)"
+                            />
+                        );
+                    })}
+                </svg>
+
+                <div>
+                    {data.map((segment) => (
+                        <div
+                            key={segment.label}
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                marginBottom: "8px"
+                            }}
+                        >
+                            <span
+                                style={{
+                                    width: "14px",
+                                    height: "14px",
+                                    borderRadius: "50%",
+                                    background:
+                                        segment.color,
+                                    display: "inline-block"
+                                }}
+                            />
+                            <span>
+                                {segment.label}: {segment.value}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -765,6 +928,72 @@ function StatCard({
             <strong>
                 {value}
             </strong>
+        </div>
+    );
+}
+
+function TaskStatusChart({
+    title,
+    data
+}: {
+    title: string;
+    data: {
+        label: string;
+        value: number;
+        color: string;
+    }[];
+}) {
+    const total = data.reduce(
+        (sum, item) => sum + item.value,
+        0
+    );
+
+    if (total === 0) {
+        return (
+            <div className="panel">
+                <h2>{title}</h2>
+                <p className="muted">
+                    No data available for chart.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="panel">
+            <h2>{title}</h2>
+
+            <div
+                style={{
+                    width: "100%",
+                    height: 320
+                }}
+            >
+                <ResponsiveContainer>
+                    <BarChart
+                        data={data}
+                        margin={{
+                            top: 20,
+                            right: 20,
+                            left: 0,
+                            bottom: 5
+                        }}
+                    >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="label" />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Bar dataKey="value">
+                            {data.map((entry) => (
+                                <Cell
+                                    key={entry.label}
+                                    fill={entry.color}
+                                />
+                            ))}
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
         </div>
     );
 }
